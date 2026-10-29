@@ -51,11 +51,29 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run --project integration --coverage --coverage.reportsDirectory=coverage/integration
+      # Гард 2 (theory-2): кожна функція репозиторіїв src/store виконана інтеграційним тестом.
+      # Лише *.repo.ts: колбек .references(() => readers.id) у schema.ts під час запитів не викликається,
+      # тож --coverage.include='src/store/**' не дає 100 % функцій навіть без змін.
+      - run: >-
+          npx vitest run --project integration --coverage
+          --coverage.reportsDirectory=coverage/integration
+          --coverage.include='src/store/*.repo.ts' --coverage.thresholds.functions=100
       - uses: actions/upload-artifact@v7
         with:
           name: coverage-integration
           path: coverage/integration/lcov.info
+
+  # Мутаційне тестування з порогом break (stryker.config.json): оцінка нижча за 80 → exit 1
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx stryker run
 
   # Quality gate Sonar way налаштовано на сервері; статус — окрема обов'язкова перевірка
   sonar:
