@@ -1,1 +1,7 @@
 /drizzle/ @abonement/backend-leads
+
+# Конфіги гардів (theory-2): послаблення перевірки потребує рев'ю власника
+/eslint.config.js @abonement/backend-leads
+/vitest.config.ts @abonement/backend-leads
+/stryker.config.json @abonement/backend-leads
+/sonar-project.properties @abonement/backend-leads
