@@ -4,7 +4,7 @@
 
 | # | Умова чи рішення | Кейс | Дані й очікування | Шар | Тест | Статус |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | умова 2 | продовження рахується від due_at | сьогодні 03.11, due_at 10.11, renewals = 0 → 200, нова due_at 24.11 | unit | | не почато |
+| 1 | умова 2 | продовження рахується від due_at | сьогодні 03.11, due_at 10.11, renewals = 0 → 200, нова due_at 24.11 | unit | `test/unit/loans/renew.test.ts` › counts the renewal from due_at, not from today | зелений |
 | 2 | умова 2 | друге продовження дозволене | renewals = 1 → 200 | unit | | не почато |
 | 3 | умова 2 | ліміт продовжень | renewals = 2 → LimitReachedError (409 LIMIT_REACHED) | unit | | не почато |
 | 4 | умова 3 | бронь іншого читача | бронь читача 2 → HoldExistsError (409 HOLD_EXISTS) | unit | | не почато |
