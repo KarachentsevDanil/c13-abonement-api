@@ -1,0 +1,40 @@
+# LIB-218: сценарії погоджено до запуску, очікування — з тікету й специфікації.
+# Стенд: docker compose up --build -d (CLOCK_FIXED_NOW=2026-11-03T09:00:00Z).
+# У кожного сценарію своя видача: запит змінює її стан. Скинути: docker compose down -v.
+
+### 1. Рахунок від due_at: 200, 10.11 → 24.11 (видача 7)
+POST {{host}}/loans/7/renew
+Authorization: Bearer {{reader1}}
+
+### 2. Друге продовження: 200, 17.11 → 01.12 (видача 8)
+POST {{host}}/loans/8/renew
+Authorization: Bearer {{reader1}}
+
+### 3. Ліміт: 409 LIMIT_REACHED (видача 9, renewals = 2)
+POST {{host}}/loans/9/renew
+Authorization: Bearer {{reader1}}
+
+### 4. Бронь іншого читача: 409 HOLD_EXISTS (видача 10, бронь reader2 на книгу 110)
+POST {{host}}/loans/10/renew
+Authorization: Bearer {{reader1}}
+
+### 5. Власна бронь не блокує: 200, 14.11 → 28.11 (видача 11, бронь reader1 на книгу 111)
+POST {{host}}/loans/11/renew
+Authorization: Bearer {{reader1}}
+
+### 6. Прострочена інша видача: 409 OVERDUE_LOANS (видача 12; у reader3 прострочена видача 13)
+POST {{host}}/loans/12/renew
+Authorization: Bearer {{reader3}}
+
+### 7. Прострочена сама видача: 409 OVERDUE_LOANS (видача 14, due_at 01.11)
+POST {{host}}/loans/14/renew
+Authorization: Bearer {{reader4}}
+
+### 8. Ліміт і прострочка разом: 409 LIMIT_REACHED (видача 15)
+POST {{host}}/loans/15/renew
+Authorization: Bearer {{reader4}}
+
+### 9. catalog-api недоступний: 503, due_at без змін (видача 16)
+# перед запуском: docker compose stop catalog-api
+POST {{host}}/loans/16/renew
+Authorization: Bearer {{reader1}}
