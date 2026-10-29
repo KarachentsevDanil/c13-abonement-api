@@ -10,7 +10,7 @@
 | 4 | умова 3 | бронь іншого читача | бронь читача 2 → HoldExistsError (409 HOLD_EXISTS) | unit | `test/unit/loans/renew.test.ts` › rejects when another reader holds the book | зелений |
 | 5 | умова 3, рішення 3 | власна бронь не блокує | бронь читача 1 → 200 | unit | `test/unit/loans/renew.test.ts` › own hold does not block renewal | зелений |
 | 6 | умова 4 | є прострочена видача | countOverdue повертає 1 → OverdueLoansError (409 OVERDUE_LOANS), extend не викликано | unit | `test/unit/loans/renew.test.ts` › rejects when the reader has an overdue loan | зелений |
-| 7 | рішення 4 | порядок причин | renewals = 2 і є прострочена видача → LIMIT_REACHED | unit | | не почато |
+| 7 | рішення 4 | порядок причин | renewals = 2 і є прострочена видача → LIMIT_REACHED | unit | `test/unit/loans/renew.test.ts` › reports LIMIT_REACHED before OVERDUE_LOANS | зелений |
 | 8 | рішення 2 | catalog-api недоступний | activeForBook відхиляє запит (таймаут) → CatalogUnavailableError, extend не викликано | unit | | не почато |
 | 9 | умова 4, рішення 1 | countOverdue проти Postgres | due_at на хвилину раніше за clock.now() → 1, на хвилину пізніше → 0; повернена прострочена видача → 0; сама видача, яку продовжують, рахується | integration | `test/integration/store/loans.repo.test.ts` › countOverdue against Postgres (3 тести) | зелений |
 | 10 | правило CLAUDE.md | extend проти Postgres | due_at оновлено, renewals + 1 | integration | `test/integration/store/loans.repo.test.ts` › extend against Postgres | зелений |
