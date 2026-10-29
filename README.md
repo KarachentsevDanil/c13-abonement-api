@@ -26,6 +26,20 @@ LIB-218. Онлайн-продовження видачі
    LIMIT_REACHED | HOLD_EXISTS | OVERDUE_LOANS
 ```
 
+## LIB-218 на гілці `final`
+
+Задачу проведено за theory-1:
+
+- `docs/LIB-218/spec.md` — критерії приймання, п'ять рішень після дослідження в plan mode, non-goals;
+- `docs/LIB-218/cases.md` — 11 схвалених кейсів зі статусами й назвами тестів;
+- історія комітів — по одному коміту на кейс: тест і код разом, вивід червоного прогону в тілі коміту (`git log final`). Якщо тест одразу був зеленим, коміт пояснює чому.
+
+Новий код: `src/loans/renew.ts`, `src/loans/errors.ts`, методи `countOverdue` і `extend` у `src/store/loans.repo.ts`, маршрут `POST /loans/:id/renew` у `src/api/loans.route.ts`.
+
+| Запит | Відповідь |
+| --- | --- |
+| `POST /loans/:id/renew` | `200 { dueAt }`; `409 { code }` з `LIMIT_REACHED`, `OVERDUE_LOANS` або `HOLD_EXISTS`; `503 { code: "CATALOG_UNAVAILABLE" }`; `404` для чужої чи неіснуючої видачі; `401` без токена |
+
 ## Структура
 
 ```
