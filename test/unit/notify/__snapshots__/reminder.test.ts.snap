@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`due reminder email > matches the approved text 1`] = `
+{
+  "subject": "Нагадування: повернення книги #105",
+  "text": "Вітаємо, Тарас Мельник!
+
+Нагадуємо: книгу #105 треба повернути до 4 листопада 2026 р.
+Продовжити видачу можна на стійці будь-якої бібліотеки мережі «Абонемент».
+
+Гарного читання!
+",
+  "to": "reader4@example.com",
+}
+`;

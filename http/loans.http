@@ -1,0 +1,14 @@
+### Власна видача: 200 { id, dueAt, renewals }
+GET {{host}}/loans/1
+Authorization: Bearer {{reader1}}
+
+### Чужа видача: 404
+GET {{host}}/loans/3
+Authorization: Bearer {{reader1}}
+
+### Без токена: 401
+GET {{host}}/loans/1
+
+### Продовження на стійці (бібліотекар): від сьогодні + 14 днів
+POST {{host}}/admin/loans/4/renew
+Authorization: Bearer {{librarian}}
