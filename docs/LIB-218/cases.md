@@ -12,7 +12,7 @@
 | 6 | умова 4 | є прострочена видача | countOverdue повертає 1 → OverdueLoansError (409 OVERDUE_LOANS), extend не викликано | unit | | не почато |
 | 7 | рішення 4 | порядок причин | renewals = 2 і є прострочена видача → LIMIT_REACHED | unit | | не почато |
 | 8 | рішення 2 | catalog-api недоступний | activeForBook відхиляє запит (таймаут) → CatalogUnavailableError, extend не викликано | unit | | не почато |
-| 9 | умова 4, рішення 1 | countOverdue проти Postgres | due_at на хвилину раніше за clock.now() → 1, на хвилину пізніше → 0; повернена прострочена видача → 0; сама видача, яку продовжують, рахується | integration | | не почато |
+| 9 | умова 4, рішення 1 | countOverdue проти Postgres | due_at на хвилину раніше за clock.now() → 1, на хвилину пізніше → 0; повернена прострочена видача → 0; сама видача, яку продовжують, рахується | integration | `test/integration/store/loans.repo.test.ts` › countOverdue against Postgres (3 тести) | зелений |
 | 10 | правило CLAUDE.md | extend проти Postgres | due_at оновлено, renewals + 1 | integration | | не почато |
 | 11 | умова 5 | формат відповіді | 200 { dueAt }; 409 { code }; 503 { code: "CATALOG_UNAVAILABLE" } | API | | не почато |
 
