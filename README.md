@@ -40,6 +40,59 @@ LIB-218. Онлайн-продовження видачі
 | --- | --- |
 | `POST /loans/:id/renew` | `200 { dueAt }`; `409 { code }` з `LIMIT_REACHED`, `OVERDUE_LOANS` або `HOLD_EXISTS`; `503 { code: "CATALOG_UNAVAILABLE" }`; `404` для чужої чи неіснуючої видачі; `401` без токена |
 
+## Гілка `theory-2`: мутанти й гарди
+
+Продовжує `final`. Кожен крок — окремий коміт із виводом у тілі (`git log theory-2`).
+
+### Мутаційне тестування
+
+`stryker.config.json` — як у theory-2: `testRunner` vitest, `mutate` `src/loans/renew.ts`, пороги 90 / 80 / break 80.
+
+```bash
+npx stryker run      # звіт: reports/mutation/mutation.html
+```
+
+| Прогін | Мутантів | Убито | Вціліло | Без покриття | CompileError | Оцінка | Exit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| код `final`, конфіг theory-2 | 28 | 22 | 5 | 1 | — | 78,57 | 1 (нижче break) |
+| те саме + `@stryker-mutator/typescript-checker` (окремий прогін, не в репозиторії) | 28 | 13 | 1 | 0 | 14 | 92,86 | 0 |
+| після посилення тесту кейсу 8 | 28 | 24 | 3 | 1 | — | 85,71 | 0 |
+
+Вцілілі на `final`: два мутанти в рядку 21 (`.catch((err) => {})` і `.catch((err) => { ; })`), бо тест кейсу 8 перевіряв лише `rejects.toThrow()`; три в рядку 17 і один без покриття там само — перевірку `NotFoundError` (чужа чи неіснуюча видача) жоден схвалений кейс не покриває. Рядок 17 лишено як є: тікет цієї поведінки не визначає, рішення — за авторкою тікету.
+
+### Гарди
+
+| Гард | Де | Спрацьовує | Пропускає погоджений виняток |
+| --- | --- | --- | --- |
+| ESLint: `vitest/no-disabled-tests`, `no-commented-out-tests`, `expect-expect`; eslint-comments `require-description` | `eslint.config.js`; PostToolUse; CI `lint` | `it.skip`, закоментований тест, тест без `expect`, `eslint-disable` без причини → хук exit 2 | `// eslint-disable-next-line vitest/no-disabled-tests -- <причина>` → exit 0 |
+| Поріг покриття функцій репозиторіїв | CI `integration`: `--coverage.include='src/store/*.repo.ts' --coverage.thresholds.functions=100` | без інтеграційного тесту `extend` → 87,5 %, exit 1 | `/* v8 ignore next 5 -- <причина> */` → exit 0 |
+| Мутаційне тестування | CI `mutation`: `npx stryker run` | оцінка нижча за 80 → exit 1 | `// Stryker disable next-line <мутатор>: <причина>` |
+| Quality gate Sonar way | сервер SonarQube; CI `sonar` | сервера немає, не запускався | Accepted / False positive з правом Administer Issues |
+| CODEOWNERS на конфіги гардів | `.github/CODEOWNERS` | зміна `eslint.config.js`, `vitest.config.ts`, `stryker.config.json`, `sonar-project.properties` потребує рев'ю власника | власник схвалює зміну |
+
+Чого цей набір не ловить (перевірено): `it.todo` (ловить правило `vitest/warn-todo`, у конфіг його не додано) і `it.skipIf(true)` — лінт і Vitest зелені, «1 skipped».
+
+`@vitest/eslint-plugin` закріплено на 1.6.27: 1.6.28 вимагає TypeScript ≥ 6, і `npm install` на TypeScript 5.6.3 падає з ERESOLVE.
+
+### Доказ зі стенда
+
+`http/renew.http` — 9 сценаріїв LIB-218, `docs/LIB-218/stand-proof.md` — команди, сирі відповіді й стан після запиту. Усі 9 збігаються з очікуваннями. Сценарій 9: після `docker compose stop catalog-api` 503 приходить за 0,02–0,2 с (ім'я не резолвиться), таймаут 2 с видно лише після `docker compose pause catalog-api` (2,02 с).
+
+Дані стенда для LIB-218 (`stand/seed-data.ts`, не повернені, 2026 рік, 00:00 UTC):
+
+| Видача | Читач | Книга | due_at | renewals | Сценарій |
+| --- | --- | --- | --- | --- | --- |
+| 7 | reader1 | 107 | 10.11 | 0 | 1 |
+| 8 | reader1 | 108 | 17.11 | 1 | 2 |
+| 9 | reader1 | 109 | 24.11 | 2 | 3 |
+| 10 | reader1 | 110, бронь reader2 | 14.11 | 0 | 4 |
+| 11 | reader1 | 111, бронь reader1 | 14.11 | 0 | 5 |
+| 12 | reader3 | 112 | 15.11 | 0 | 6 |
+| 13 | reader3 | 113 | 30.10 | 0 | прострочка для сценарію 6 |
+| 14 | reader4 | 114 | 01.11 | 0 | 7 |
+| 15 | reader4 | 115 | 20.11 | 2 | 8 |
+| 16 | reader1 | 116 | 12.11 | 0 | 9 |
+
 ## Структура
 
 ```
@@ -124,7 +177,7 @@ Docker доступний і в CI, і в сесії агента.
 
 ## CI-гейт і branch protection
 
-Workflow `.github/workflows/ci.yml`: jobs `lint`, `typecheck`, `unit`, `integration`, `sonar` на кожен PR у `main`. Покриття unit та integration іде в Sonar як lcov. Секрети `SONAR_TOKEN` і `SONAR_HOST_URL` — у налаштуваннях репозиторію.
+Workflow `.github/workflows/ci.yml`: jobs `lint`, `typecheck`, `unit`, `integration`, `sonar` на кожен PR у `main`; на `theory-2` ще `mutation` і поріг покриття в `integration`. Покриття unit та integration іде в Sonar як lcov. Секрети `SONAR_TOKEN` і `SONAR_HOST_URL` — у налаштуваннях репозиторію.
 
 Сервера Sonar у навчального репозиторію немає, тож без цих секретів job `sonar` червоний. Команда `@abonement/backend-leads` у CODEOWNERS умовна: на GitHub такої немає.
 
@@ -133,9 +186,11 @@ Branch protection задається в налаштуваннях GitHub і в 
 ```
 Branch protection (main)
   Require status checks to pass: lint, unit, integration, SonarQube quality gate
+                                  (theory-2: + mutation)
   Require approvals: 1
   Require review from Code Owners: увімкнено
-  .github/CODEOWNERS: /drizzle/
+  .github/CODEOWNERS: /drizzle/; на theory-2 також eslint.config.js, vitest.config.ts,
+                      stryker.config.json, sonar-project.properties
 ```
 
 ## Прод-моніторинг
