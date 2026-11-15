@@ -1,0 +1,39 @@
+# Колектор приймає OTLP від Claude Code.
+# Метрики → Prometheus (через ендпоінт для скрейпу), події → файл data/events.jsonl.
+# Claude Code шле лічильники як дельти (OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta
+# за замовчуванням), а Prometheus очікує накопичених значень: delta_to_cumulative складає дельти
+# одного ряду, навіть коли між ними пауза.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  delta_to_cumulative:
+    # Ряд сесії живе 30 днів: дельти після паузи додаються до тієї самої суми.
+    max_stale: 720h
+  batch: {}
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    # Сесія закінчилась — ряд не зникає з ендпоінта ще 30 днів.
+    metric_expiration: 720h
+  file/metrics:
+    path: /data/metrics.jsonl
+  file/events:
+    path: /data/events.jsonl
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [delta_to_cumulative, batch]
+      exporters: [prometheus, file/metrics]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file/events]
